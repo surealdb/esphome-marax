@@ -1,55 +1,71 @@
 substitutions:
-  esp_name: coffee
-  esp_hostname: esp-coffee
-
-<<: !include ../.base.yaml
+  esp_name: MaraX
+  esp_hostname: "esphome-marax"
 
 esphome:
   name: ${esp_hostname}
-  platform: ESP32
+  friendly_name: ESPHome MaraX
+  #platform: ESP32 # TODO needed?
+  #board: esp32dev # TODO needed?
+
+esp32:
   board: esp32dev
-  
-time:
-  - platform: homeassistant
-    id: esptime
-    
-font:
-  - file: '../fonts/arial.ttf'
-    id: font1
-    size: 33
-    
-  - file: '../fonts/arial.ttf'
-    id: font2
-    size: 52
+  framework:
+    type: arduino
 
-# Example configuration entry
-i2c:
-  sda: GPIO5
-  scl: GPIO4
+# Enable logging
+logger:
 
-display:
-  - platform: ssd1306_i2c
-    model: "SSD1306 128x64"
-    id: "my_display"
-    address: 0x3C
-    pages:
-      - id: pageCoffee
-        lambda: |-
-          it.printf(0, 15, id(font1), "%.f/%.f", id(heat_actual).state, id(steam_actual).state);
-      - id: pageClock
-        lambda: |-
-          it.strftime(0, 51, id(font2), TextAlign::BASELINE_LEFT, "%H:%M", id(esptime).now());
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "dRo6fsq1XYVWKGGW8E0uVEHt6HXz4oaJfg8fZGfWlJI="
+
+ota:
+
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esphome-Web-29Dd60"
+    password: "M8J5FyGyR9mz"
+
+captive_portal:
 
 sensor:
   - platform: template
-    name: "Steam Actual"
+    name: "Dampf Aktuelle Temperatur"
     id: "steam_actual"
+    update_interval: 10s
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    state_class: "measurement"
+    accuracy_decimals: 1
   - platform: template
-    name: "Steam Target"
+    name: "Dampf Zieltemperatur"
     id: "steam_target"
+    update_interval: 10s
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    state_class: "measurement"
+    accuracy_decimals: 1
   - platform: template
-    name: "Heatexchanger Actual"
+    name: "HX Aktuelle Temperatur"
     id: "heat_actual"
+    update_interval: 10s
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    state_class: "measurement"
+    accuracy_decimals: 1
+  # countdown for 'boost-mode'
+  - platform: template
+    name: "Time Counter"
+    id: "time_counter"
+    update_interval: 5s
+    unit_of_measurement: "s"
   # Uptime sensor.
   - platform: uptime
     name: ${esp_name} Uptime
@@ -60,8 +76,10 @@ sensor:
 
 binary_sensor:
   - platform: template
-    name: "Heating"
+    name: "Heizt"
     id: "heating"
+    # not allowed here
+    # update_interval: 5s
         
 # Text sensors with general information.
 text_sensor:
@@ -77,21 +95,25 @@ text_sensor:
     bssid:
       name: ${esp_name}
   - platform: template
-    name: "Operation Mode"
+    name: "Betriebsmodus"
     id: "opsType"
     filters:
       - map:
-        - C -> Coffee priority
-        - S -> Steam priority
+        - C -> Coffee Modus
+        - S -> S Steam Modus
+        - V -> V Steam Modus
         - X -> Offline
+        - + -> MaraX Modus
+    update_interval: 30s
   - platform: template
-    name: "Firmware Version"
+    name: "MaraX Firmware Version"
     id: "coffeeVersion"
+    update_interval: 60s
 
 uart:
   baud_rate: 9600
-  tx_pin: GPIO13
-  rx_pin: GPIO15
+  tx_pin: GPIO16
+  rx_pin: GPIO17
   id: UART2
   debug:
     direction: BOTH
@@ -106,33 +128,68 @@ uart:
           int senSteamActual=0;
           int senSteamTarget=0;
           int senHeatActual=0;
-          int senHeating=0;
           int senCounter=0;
-          //C123b,095,112,063,1095,1\r\n
+          int senHeating=0;
+          
+          
+          //std::string str = "C123b,095,112,063,1095,1\r\n";
+          //std::string str1 = "C1.06,116,124,093,0840,1,0\n";
+          // meine: ohne tank drin, modus Schalter auf I, Temp Schalter 0
+          //std::string str2 = "C1.09,031,\x1F+/,029,0000,0,0\r\n"
+          // meine: ohne tank drin, modus Schalter auf 0, Temp Schalter 0
+          //std::string str3 = "+1.09,031,\x1F+/,028,0000,0,0\r\n"
+          // temp schalter hat keine Auswirkung
+          // Mit Tank, Modus I, Temp 0
+          //std::string str4 = "C1.09,030,138,028,0000,1,0\r\n"
+
+          
           std::string str(bytes.begin(), bytes.end());
+
           if (sscanf(str.c_str(), "%1c%4c,%d,%d,%d,%d,%d", senType, senVersion, &senSteamActual, &senSteamTarget, &senHeatActual, &senCounter, &senHeating) == 7 ) {
-            id(steam_actual).publish_state(senSteamActual); 
-            id(steam_target).publish_state(senSteamTarget);
-            id(heat_actual).publish_state(senHeatActual);
-            id(heating).publish_state(senHeating);
-            //id(opsType).publish_state(senType);
-            //id(coffeeVersion).publish_state(senVersion);
-            id(show_coffee_values).execute();
+              
+              id(opsType).publish_state(senType);
+              //printf("Ops Mode: %.1s \n", senType);
+              
+              id(coffeeVersion).publish_state(senVersion);
+              //printf("MaraX Firmware: %.4s \n", senVersion);
+              
+              id(steam_actual).publish_state(senSteamActual);
+              //printf("Steam Actual: %d \n", senSteamActual);
+              
+              id(steam_target).publish_state(senSteamTarget);
+              //printf("Steam Target: %d \n", senSteamTarget);
+              
+              id(heat_actual).publish_state(senHeatActual);
+              //printf("Heat Actual: %d \n", senHeatActual);
+              
+              id(time_counter).publish_state(senCounter);
+              //printf("Time Counter: %d \n", senCounter);
+              
+              id(heating).publish_state(senHeating);
+              //printf("Is Heating (as Int): %d \n", senHeating);
+              
+              //id(show_coffee_values).execute();
           }
 
-script:
-  - id: show_coffee_values
-    mode: restart
-    then:
-      - display.page.show: pageCoffee
-      - component.update: my_display
-      - delay: 5s
-      - display.page.show: pageClock
-      - component.update: my_display
-      - lambda: |-
-          id(steam_actual).publish_state(NAN); 
-          id(steam_target).publish_state(NAN);
-          id(heat_actual).publish_state(NAN);
-          id(heating).publish_state(0);
-          id(opsType).publish_state("X");
-          //id(coffeeVersion).publish_state(NAN);
+#format of: "C1.19,116,124,095,0560,0", every 400ms or so.
+# C1.19 - C for Coffee, 1.19 is the software version. This can also be V for Vapour (Steam) if the machine is in Steam priority mode.
+# 116 - This is the real/actual steam temperature in Celsius.
+# 124 - This is the target steam temperature in Celsius.
+# 096 - This is the real/actual heat exchanger temperature in Celsius.
+# 0560 - This is a countdown used to track if the machine is in "fast heating" mode, it seems to go anywhere from 1500-0. 0 means it's no longer boosting.
+# 0 - This represents if the heating element is on, 0 is Off, 1is On.
+
+# C123b,120,112,095,0000,0
+# Im Vergleich dazu, das was SaibotFlow als Beispiel angibt, bzw. was auch hier weiter oben gepostet wurde:
+# C1.06,116,124,093,0840,1,0\n
+# Ich habe also eine spätere Software Version und die aktuelle Temperatur und die Zieltemperatur scheinen en Platz getauscht zu haben. Und ich habe eben nur sechs Werte, keine sieben. D
+
+# D][api:102]: Accepted 192.168.178.200
+# [17:28:17][D][api.connection:920]: Home Assistant 2023.3.5 (192.168.178.200): Connected successfully
+# [17:28:17][D][uart_debug:158]: <<< "C1.09,050,128,030,0000,1,0\r\n"
+# [17:28:17][D][text_sensor:067]: 'Betriebsmodus': Sending state 'C2'
+# [17:28:17][D][text_sensor:067]: 'MaraX Firmware Version': Sending state '1.09\x98*\xfd?\x98*\xfd?|*\xfd?'
+# [17:28:17][D][sensor:127]: 'Dampf Aktuelle Temperatur': Sending state 50.00000 °C with 1 decimals of accuracy
+# [17:28:17][D][sensor:127]: 'Dampf Zieltemperatur': Sending state 128.00000 °C with 1 decimals of accuracy
+# [17:28:17][D][sensor:127]: 'HX Aktuelle Temperatur': Sending state 30.00000 °C with 1 decimals of accuracy
+# [17:28:17][D][sensor:127]: 'Time Counter': Sending state 0.00000 s with 1 decimals of accuracy
