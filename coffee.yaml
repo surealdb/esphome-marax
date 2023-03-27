@@ -5,8 +5,6 @@ substitutions:
 esphome:
   name: ${esp_hostname}
   friendly_name: "ESPHome MaraX"
-  #platform: ESP32 # TODO needed?
-  #board: esp32dev # TODO needed?
 
 esp32:
   board: esp32dev
