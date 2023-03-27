@@ -46,7 +46,7 @@ void readAndPublish(std::string str) {
     char buff[10];
     std::string buffAsStdStr;
     
-    //std::string str(bytes.begin(), bytes.end());
+    //std::string str(bytes.begin(), bytes.end()); //TODO
     
     int elementCount = sscanf(str.c_str(), "%1c%4c,%d,%d,%d,%d,%d,%d", senType, senVersion, &senSteamActual, &senSteamTarget, &senHeatActual, &senCounter, &senHeating, &senPumpActive);
     
@@ -114,11 +114,11 @@ void readAndPublish(std::string str) {
             //ESP_LOGD("MaraX", "Pumpe an: %d \n", senPumpActive);
         }
         
-        //currentTimestamp = millis(); // TODO
-        currentTimestamp = getCurrentTimestamp(); // TODO remove
+        //currentTimestamp = millis(); //TODO
+        currentTimestamp = getCurrentTimestamp(); //TODO remove
         
-        //previousTimestamp = round(id(state_previousTimestamp).raw_state); // TODO
-        previousTimestamp = state_previousTimestamp; // TODO remove
+        //previousTimestamp = id(state_previousTimestamp); //TODO
+        previousTimestamp = state_previousTimestamp; //TODO remove
         // init previous timestamp if needed
         if (previousTimestamp == 0) {
             previousTimestamp = currentTimestamp;
@@ -126,11 +126,11 @@ void readAndPublish(std::string str) {
         
         if(senPumpActive == 1 && currentTimestamp != 0) {
             
-            //lastPumpActiveState = round(id(pumpActive).raw_state); // TODO
-            lastPumpActiveState = pumpActive; // TODO remove
+            //lastPumpActiveState = round(id(pumpActive).raw_state); //TODO
+            lastPumpActiveState = pumpActive; //TODO remove
             
-            //timeElapsed = round(id(state_timeElapsedSincePumpStarted).raw_state); // TODO
-            timeElapsed = state_timeElapsedSincePumpStarted; // TODO remove
+            //timeElapsed = id(state_timeElapsedSincePumpStarted); //TODO
+            timeElapsed = state_timeElapsedSincePumpStarted; //TODO remove
             // if pump just started
             if (lastPumpActiveState == 0) {
                 // reset time elapsed counter
@@ -138,15 +138,15 @@ void readAndPublish(std::string str) {
             }
             timeElapsed = timeElapsed + (currentTimestamp - previousTimestamp);
             
-            //id(state_timeElapsedSincePumpStarted).publish_state(timeElapsed); // TODO
-            state_timeElapsedSincePumpStarted = timeElapsed; // TODO remove
+            //id(state_timeElapsedSincePumpStarted) = timeElapsed; //TODO
+            state_timeElapsedSincePumpStarted = timeElapsed; //TODO remove
         }
         
-        //id(state_previousTimestamp).publish_state(currentTimestamp); // TODO
-        state_previousTimestamp = currentTimestamp; // TODO remove
+        //id(state_previousTimestamp) = currentTimestamp; //TODO
+        state_previousTimestamp = currentTimestamp; //TODO remove
         
         //id(pumpActive).publish_state(senPumpActive);
-        pumpActive = senPumpActive; // TODO remove
+        pumpActive = senPumpActive; //TODO remove
     }
     
 }
@@ -247,5 +247,15 @@ int main3(int argc, const char * argv[]) {
  # Im Vergleich dazu, das was SaibotFlow als Beispiel angibt, bzw. was auch hier weiter oben gepostet wurde:
  # C1.06,116,124,093,0840,1,0\n
  # Ich habe also eine spaetere Software Version und die aktuelle Temperatur und die Zieltemperatur scheinen en Platz getauscht zu haben. Und ich habe eben nur sechs Werte, keine sieben. D
+ 
+ # D][api:102]: Accepted 192.168.178.200
+ # [17:28:17][D][api.connection:920]: Home Assistant 2023.3.5 (192.168.178.200): Connected successfully
+ # [17:28:17][D][uart_debug:158]: <<< "C1.09,050,128,030,0000,1,0\r\n"
+ # [17:28:17][D][text_sensor:067]: 'Betriebsmodus': Sending state 'C2'
+ # [17:28:17][D][sensor:127]: 'Dampf Aktuelle Temperatur': Sending state 50.00000 °C with 1 decimals of accuracy
+ # [17:28:17][D][sensor:127]: 'Dampf Zieltemperatur': Sending state 128.00000 °C with 1 decimals of accuracy
+ # [17:28:17][D][sensor:127]: 'HX Aktuelle Temperatur': Sending state 30.00000 °C with 1 decimals of accuracy
+ # [17:28:17][D][sensor:127]: 'Time Counter': Sending state 0.00000 s with 1 decimals of accuracy
+ 
  
  */

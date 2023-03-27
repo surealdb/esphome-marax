@@ -74,6 +74,14 @@ sensor:
   - platform: wifi_signal
     name: ${esp_name} WiFi Signal
     update_interval: 60s
+  - platform: template
+    name: "Bezugsdauer"
+    id: "timeElapsedSincePumpStarted"
+    update_interval: 1s
+    unit_of_measurement: "s"
+    lambda: |-
+      int timeElapsedSincePumpStarted = round(id(state_timeElapsedSincePumpStarted) / 1000);
+      return timeElapsedSincePumpStarted;
 
 binary_sensor:
   - platform: template
@@ -119,15 +127,15 @@ text_sensor:
 
 # https://esphome.io/guides/automations.html#global-variables
 globals:
-   - id: my_global_int
-     type: int
-     restore_value: no
-     initial_value: '0'
-   # Example for global string variable
-   - id: my_global_string
-     type: std::string
-     restore_value: no  # Strings cannot be saved/restored
-     initial_value: '"Global value is"'
+  - id: state_previousTimestamp
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: state_timeElapsedSincePumpStarted
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
 
 uart:
   baud_rate: 9600
@@ -142,9 +150,9 @@ uart:
       delimiter: "\r\n"
     sequence:
       - lambda: |-
+          UARTDebug::log_string(direction, bytes);
           
           bool debugMode = true;
-          if(debugMode) UARTDebug::log_string(direction, bytes);
     
           char senType[1];
           char senVersion[4];
@@ -156,10 +164,15 @@ uart:
           int senHeating=0;
           int senPumpActive=0;
           
+          uint32_t previousTimestamp=0;
+          uint32_t currentTimestamp=0;
+          uint32_t timeElapsed=0;
+          int lastPumpActiveState=0;
+          
           char buff[10];
           std::string buffAsStdStr;
           
-          std::string str(bytes.begin(), bytes.end());
+          std::string str(bytes.begin(), bytes.end()); //TODO
           
           int elementCount = sscanf(str.c_str(), "%1c%4c,%d,%d,%d,%d,%d,%d", senType, senVersion, &senSteamActual, &senSteamTarget, &senHeatActual, &senCounter, &senHeating, &senPumpActive);
           
@@ -167,8 +180,8 @@ uart:
           
           if(elementCount == 3) {
               if(debugMode) {
-                  printf("Wasserbehälter entfernt\n");
-                  ESP_LOGD("MaraX", "Wasserbehälter entfernt\n");
+                  printf("Wasserbehaelter entfernt\n");
+                  ESP_LOGD("MaraX", "Wasserbehaelter entfernt\n");
               }
               
               elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senCounter, &senHeating, &senPumpActive);
@@ -226,27 +239,38 @@ uart:
                   printf("Pumpe an: %d \n", senPumpActive);
                   ESP_LOGD("MaraX", "Pumpe an: %d \n", senPumpActive);
               }
+              
+              currentTimestamp = millis(); // TODO
+              //currentTimestamp = getCurrentTimestamp(); // TODO remove
+              
+              previousTimestamp = id(state_previousTimestamp); // TODO
+              //previousTimestamp = state_previousTimestamp; // TODO remove
+              // init previous timestamp if needed
+              if (previousTimestamp == 0) {
+                  previousTimestamp = currentTimestamp;
+              }
+              
+              if(senPumpActive == 1 && currentTimestamp != 0) {
+                  
+                  lastPumpActiveState = round(id(pumpActive).raw_state); // TODO
+                  //lastPumpActiveState = pumpActive; // TODO remove
+                  
+                  timeElapsed = id(state_timeElapsedSincePumpStarted); // TODO
+                  //timeElapsed = state_timeElapsedSincePumpStarted; // TODO remove
+                  // if pump just started
+                  if (lastPumpActiveState == 0) {
+                      // reset time elapsed counter
+                      timeElapsed = 0;
+                  }
+                  timeElapsed = timeElapsed + (currentTimestamp - previousTimestamp);
+                  
+                  id(state_timeElapsedSincePumpStarted) = timeElapsed; // TODO
+                  //state_timeElapsedSincePumpStarted = timeElapsed; // TODO remove
+              }
+              
+              id(state_previousTimestamp) = currentTimestamp; // TODO
+              //state_previousTimestamp = currentTimestamp; // TODO remove
+              
               id(pumpActive).publish_state(senPumpActive);
+              //pumpActive = senPumpActive; // TODO remove
           }
-
-#format of: "C1.19,116,124,095,0560,0", every 400ms or so.
-# C1.19 - C for Coffee, 1.19 is the software version. This can also be V for Vapour (Steam) if the machine is in Steam priority mode.
-# 116 - This is the real/actual steam temperature in Celsius.
-# 124 - This is the target steam temperature in Celsius.
-# 096 - This is the real/actual heat exchanger temperature in Celsius.
-# 0560 - This is a countdown used to track if the machine is in "fast heating" mode, it seems to go anywhere from 1500-0. 0 means it's no longer boosting.
-# 0 - This represents if the heating element is on, 0 is Off, 1is On.
-
-# C123b,120,112,095,0000,0
-# Im Vergleich dazu, das was SaibotFlow als Beispiel angibt, bzw. was auch hier weiter oben gepostet wurde:
-# C1.06,116,124,093,0840,1,0\n
-# Ich habe also eine spätere Software Version und die aktuelle Temperatur und die Zieltemperatur scheinen en Platz getauscht zu haben. Und ich habe eben nur sechs Werte, keine sieben. D
-
-# D][api:102]: Accepted 192.168.178.200
-# [17:28:17][D][api.connection:920]: Home Assistant 2023.3.5 (192.168.178.200): Connected successfully
-# [17:28:17][D][uart_debug:158]: <<< "C1.09,050,128,030,0000,1,0\r\n"
-# [17:28:17][D][text_sensor:067]: 'Betriebsmodus': Sending state 'C2'
-# [17:28:17][D][sensor:127]: 'Dampf Aktuelle Temperatur': Sending state 50.00000 °C with 1 decimals of accuracy
-# [17:28:17][D][sensor:127]: 'Dampf Zieltemperatur': Sending state 128.00000 °C with 1 decimals of accuracy
-# [17:28:17][D][sensor:127]: 'HX Aktuelle Temperatur': Sending state 30.00000 °C with 1 decimals of accuracy
-# [17:28:17][D][sensor:127]: 'Time Counter': Sending state 0.00000 s with 1 decimals of accuracy
