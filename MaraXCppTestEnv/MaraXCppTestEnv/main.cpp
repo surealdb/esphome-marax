@@ -54,8 +54,8 @@ void readAndPublish(std::string str) {
     
     if(elementCount == 3) {
         if(debugMode) {
-            printf("Wasserbehälter entfernt\n");
-            //ESP_LOGD("MaraX", "Wasserbehälter entfernt\n");
+            printf("Wasserbehaelter entfernt\n");
+            //ESP_LOGD("MaraX", "Wasserbehaelter entfernt\n");
         }
         
         elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senCounter, &senHeating, &senPumpActive);
@@ -246,6 +246,6 @@ int main3(int argc, const char * argv[]) {
  # C123b,120,112,095,0000,0
  # Im Vergleich dazu, das was SaibotFlow als Beispiel angibt, bzw. was auch hier weiter oben gepostet wurde:
  # C1.06,116,124,093,0840,1,0\n
- # Ich habe also eine spätere Software Version und die aktuelle Temperatur und die Zieltemperatur scheinen en Platz getauscht zu haben. Und ich habe eben nur sechs Werte, keine sieben. D
+ # Ich habe also eine spaetere Software Version und die aktuelle Temperatur und die Zieltemperatur scheinen en Platz getauscht zu haben. Und ich habe eben nur sechs Werte, keine sieben. D
  
  */
