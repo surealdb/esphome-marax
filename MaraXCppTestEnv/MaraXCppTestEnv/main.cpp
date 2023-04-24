@@ -55,7 +55,7 @@ void readAndPublish(std::string str) {
     }
     if(elementCount == 3) {
         if(debugMode) {
-            ESP_LOGD("MaraX", "Wasserbehaelter entfernt: %d\n", 1);
+            ESP_LOGD("MaraX", "Water container is removed: %d\n", 1);
         }
         
         elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senBoostCountdown, &senHeating, &senPumpActive);
@@ -103,7 +103,7 @@ void readAndPublish(std::string str) {
         //TODOUNCOMMENTid(heating).publish_state(senHeating);
         
         if(debugMode) {
-            ESP_LOGD("MaraX", "Pumpe an: %d \n", senPumpActive);
+            ESP_LOGD("MaraX", "Pump is active: %d \n", senPumpActive);
         }
         
         currentTimestamp = millis();
