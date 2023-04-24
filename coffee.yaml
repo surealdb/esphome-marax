@@ -4,7 +4,7 @@ substitutions:
 
 esphome:
   name: ${esp_hostname}
-  friendly_name: "ESPHome MaraX"
+  friendly_name: "MaraX"
 
 esp32:
   board: esp32dev
@@ -21,11 +21,20 @@ api:
 
 ota:
 
-
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-
+  # While some options can reduce the power usage of the ESP, they generally also decrease the reliability 
+  # of the WiFi connection, with frequent disconnections from the router in the highest power saving mode.
+  power_save_mode: none
+  manual_ip:
+    # Set this to the IP of the ESP
+    static_ip: 192.168.178.212
+    # Set this to the IP address of the router. Often ends with .1
+    gateway: 192.168.178.1
+    # The subnet of the network. 255.255.255.0 works for most home networks.
+    subnet: 255.255.255.0
+    dns1: 192.168.178.1
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Esphome-Web-29Dd60"
@@ -37,7 +46,7 @@ sensor:
   - platform: template
     name: "Dampf Temp."
     id: "steam_actual"
-    update_interval: 10s
+    update_interval: 5s
     unit_of_measurement: "°C"
     device_class: "temperature"
     state_class: "measurement"
@@ -45,7 +54,7 @@ sensor:
   - platform: template
     name: "Dampf Zieltemp."
     id: "steam_target"
-    update_interval: 10s
+    update_interval: 5s
     unit_of_measurement: "°C"
     device_class: "temperature"
     state_class: "measurement"
@@ -53,24 +62,24 @@ sensor:
   - platform: template
     name: "HX Temp."
     id: "heat_actual"
-    update_interval: 10s
+    update_interval: 5s
     unit_of_measurement: "°C"
     device_class: "temperature"
     state_class: "measurement"
     accuracy_decimals: 1
   # countdown for 'boost-mode'
   - platform: template
-    name: "Time Counter"
-    id: "time_counter"
-    update_interval: 5s
+    name: "Boost Countdown"
+    id: "boost_countdown"
+    update_interval: 1s
     unit_of_measurement: "s"
   # Uptime sensor.
   - platform: uptime
-    name: ${esp_name} Uptime
-    id: "uptime"
+    name: Uptime
+    id: "esp_uptime"
   # WiFi Signal sensor.
   - platform: wifi_signal
-    name: ${esp_name} WiFi Signal
+    name: WiFi Signal
     update_interval: 60s
   - platform: template
     name: "Bezugsdauer"
@@ -97,7 +106,7 @@ binary_sensor:
 text_sensor:
   # Expose ESPHome version as sensor.
   - platform: version
-    name: "${esp_name} ESPHome Version"
+    name: "ESPHome Version"
   # Expose WiFi information as sensors.
   - platform: wifi_info
     ip_address:
@@ -118,7 +127,7 @@ text_sensor:
         - + -> MaraX Modus
     update_interval: 30s
   - platform: template
-    name: "MaraX Firmware Version"
+    name: "Firmware Version"
     id: "coffeeVersion"
     update_interval: 60s
 
@@ -149,16 +158,14 @@ uart:
     sequence:
       - lambda: |-
           UARTDebug::log_string(direction, bytes);
-          
           bool debugMode = true;
-    
           char senType[1];
           char senVersion[4];
           int senSteamActual=0;
           int senSteamTarget=0;
           char senSteamTargetStr[3];
           int senHeatActual=0;
-          int senCounter=0;
+          int senBoostCountdown=0;
           int senHeating=0;
           int senPumpActive=0;
           
@@ -167,82 +174,73 @@ uart:
           uint32_t timeElapsed=0;
           int lastPumpActiveState=0;
           
-          char buff[10];
-          std::string buffAsStdStr;
+          char stringBuffer[10];
+          std::string sensorValueText;
           
-          std::string str(bytes.begin(), bytes.end()); //TODO
+          std::string str(bytes.begin(), bytes.end());
           
-          int elementCount = sscanf(str.c_str(), "%1c%4c,%d,%d,%d,%d,%d,%d", senType, senVersion, &senSteamActual, &senSteamTarget, &senHeatActual, &senCounter, &senHeating, &senPumpActive);
+          int elementCount = sscanf(str.c_str(), "%1c%4c,%d,%d,%d,%d,%d,%d", senType, senVersion, &senSteamActual, &senSteamTarget, &senHeatActual, &senBoostCountdown, &senHeating, &senPumpActive);
           
-          if(debugMode) printf("Element Count: %d \n", elementCount);
-          
+          if(debugMode) {
+              ESP_LOGD("MaraX", "Element Count: %d \n", elementCount);
+          }
           if(elementCount == 3) {
               if(debugMode) {
-                  printf("Wasserbehaelter entfernt\n");
-                  ESP_LOGD("MaraX", "Wasserbehaelter entfernt\n");
+                  ESP_LOGD("MaraX", "Wasserbehaelter entfernt: %d\n", 1);
               }
               
-              elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senCounter, &senHeating, &senPumpActive);
+              elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senBoostCountdown, &senHeating, &senPumpActive);
           }
           
           if (elementCount >= 7 ) {
               
-              snprintf(buff, sizeof(buff), "%.1s", senType);
-              buffAsStdStr = buff;
+              snprintf(stringBuffer, sizeof(stringBuffer), "%.1s", senType);
+              sensorValueText = stringBuffer;
               if(debugMode) {
-                  printf("Ops Mode: %s \n", buffAsStdStr.c_str());
-                  ESP_LOGD("MaraX", "Ops Mode: %s \n", buffAsStdStr.c_str());
+                  ESP_LOGD("MaraX", "Ops Mode: %s \n", sensorValueText.c_str());
               }
-              id(opsType).publish_state(buffAsStdStr.c_str());
+              id(opsType).publish_state(sensorValueText.c_str());
               
-              snprintf(buff, sizeof(buff), "%.4s", senVersion);
-              buffAsStdStr = buff;
+              snprintf(stringBuffer, sizeof(stringBuffer), "%.4s", senVersion);
+              sensorValueText = stringBuffer;
               if(debugMode) {
-                  printf("MaraX Firmware: %s \n", buffAsStdStr.c_str());
-                  ESP_LOGD("MaraX", "MaraX Firmware: %s \n", buffAsStdStr.c_str());
+                  ESP_LOGD("MaraX", "MaraX Firmware: %s \n", sensorValueText.c_str());
               }
-              id(coffeeVersion).publish_state(buffAsStdStr.c_str());
+              id(coffeeVersion).publish_state(sensorValueText.c_str());
               
               if(debugMode) {
-                  printf("Steam Actual: %d \n", senSteamActual);
-                  //ESP_LOGD("MaraX", "Steam Actual: %d \n", senSteamActual);
+                  ESP_LOGD("MaraX", "Steam Actual: %d \n", senSteamActual);
               }
               id(steam_actual).publish_state(senSteamActual);
               
               if(debugMode) {
-                  printf("Steam Target: %d \n", senSteamTarget);
                   ESP_LOGD("MaraX", "Steam Target: %d \n", senSteamTarget);
               }
               id(steam_target).publish_state(senSteamTarget);
               
               if(debugMode) {
-                  printf("Heat Actual: %d \n", senHeatActual);
                   ESP_LOGD("MaraX", "Heat Actual: %d \n", senHeatActual);
               }
               id(heat_actual).publish_state(senHeatActual);
               
               if(debugMode) {
-                  printf("Time Counter: %d \n", senCounter);
-                  ESP_LOGD("MaraX", "Time Counter: %d \n", senCounter);
+                  ESP_LOGD("MaraX", "Boost Countdown: %d \n", senBoostCountdown);
               }
-              id(time_counter).publish_state(senCounter);
+              id(boost_countdown).publish_state(senBoostCountdown);
               
               if(debugMode) {
-                  printf("Is Heating: %d \n", senHeating);
                   ESP_LOGD("MaraX", "Is Heating: %d \n", senHeating);
               }
               id(heating).publish_state(senHeating);
               
               if(debugMode) {
-                  printf("Pumpe an: %d \n", senPumpActive);
                   ESP_LOGD("MaraX", "Pumpe an: %d \n", senPumpActive);
               }
               
-              currentTimestamp = millis(); // TODO
-              //currentTimestamp = getCurrentTimestamp(); // TODO remove
+              currentTimestamp = millis();
               
-              previousTimestamp = id(state_previousTimestamp); // TODO
-              //previousTimestamp = state_previousTimestamp; // TODO remove
+              previousTimestamp = id(state_previousTimestamp);
+              //previousTimestamp = state_previousTimestamp; //TODO remove
               // init previous timestamp if needed
               if (previousTimestamp == 0) {
                   previousTimestamp = currentTimestamp;
@@ -250,25 +248,28 @@ uart:
               
               if(senPumpActive == 1 && currentTimestamp != 0) {
                   
-                  lastPumpActiveState = round(id(pumpActive).raw_state); // TODO
-                  //lastPumpActiveState = pumpActive; // TODO remove
+                  lastPumpActiveState = round(id(pumpActive).state);
+                  //lastPumpActiveState = pumpActive; //TODO remove
                   
-                  timeElapsed = id(state_timeElapsedSincePumpStarted); // TODO
-                  //timeElapsed = state_timeElapsedSincePumpStarted; // TODO remove
+                  timeElapsed = id(state_timeElapsedSincePumpStarted);
+                  //timeElapsed = state_timeElapsedSincePumpStarted; //TODO remove
                   // if pump just started
                   if (lastPumpActiveState == 0) {
                       // reset time elapsed counter
                       timeElapsed = 0;
                   }
                   timeElapsed = timeElapsed + (currentTimestamp - previousTimestamp);
+                  if(debugMode) {
+                      ESP_LOGD("MaraX", "Time elapsed: %d \n", timeElapsed);
+                  }
                   
-                  id(state_timeElapsedSincePumpStarted) = timeElapsed; // TODO
-                  //state_timeElapsedSincePumpStarted = timeElapsed; // TODO remove
+                  id(state_timeElapsedSincePumpStarted) = timeElapsed;
+                  //state_timeElapsedSincePumpStarted = timeElapsed; //TODO remove
               }
               
-              id(state_previousTimestamp) = currentTimestamp; // TODO
-              //state_previousTimestamp = currentTimestamp; // TODO remove
+              id(state_previousTimestamp) = currentTimestamp;
+              //state_previousTimestamp = currentTimestamp; //TODO remove
               
               id(pumpActive).publish_state(senPumpActive);
-              //pumpActive = senPumpActive; // TODO remove
+              //pumpActive = senPumpActive; //TODO remove
           }

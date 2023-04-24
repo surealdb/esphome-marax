@@ -43,6 +43,7 @@
 			children = (
 				C223C18429CCE6F5001FCA5D /* MaraXCppTestEnv */,
 				C223C18329CCE6F5001FCA5D /* Products */,
+				C26B1B9D29F58C0C00E6DD1F /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -60,6 +61,13 @@
 				C223C18529CCE6F5001FCA5D /* main.cpp */,
 			);
 			path = MaraXCppTestEnv;
+			sourceTree = "<group>";
+		};
+		C26B1B9D29F58C0C00E6DD1F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

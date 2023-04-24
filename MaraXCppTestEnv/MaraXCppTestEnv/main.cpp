@@ -11,12 +11,13 @@
 #include <string.h>
 #include <chrono>
 
+#define ESP_LOGD(x,y,z) ( printf(y,z) )
 
 int pumpActive = 0;
 uint32_t state_previousTimestamp = 0;
 uint32_t state_timeElapsedSincePumpStarted = 0;
 
-uint32_t getCurrentTimestamp() {
+uint32_t millis() {
     using namespace std::chrono;
     return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
@@ -27,14 +28,13 @@ void readAndPublish(std::string str) {
     printf("READING:\n%s\n", str.c_str());
     
     bool debugMode = true;
-    
     char senType[1];
     char senVersion[4];
     int senSteamActual=0;
     int senSteamTarget=0;
     char senSteamTargetStr[3];
     int senHeatActual=0;
-    int senCounter=0;
+    int senBoostCountdown=0;
     int senHeating=0;
     int senPumpActive=0;
     
@@ -43,81 +43,72 @@ void readAndPublish(std::string str) {
     uint32_t timeElapsed=0;
     int lastPumpActiveState=0;
     
-    char buff[10];
-    std::string buffAsStdStr;
+    char stringBuffer[10];
+    std::string sensorValueText;
     
-    //std::string str(bytes.begin(), bytes.end()); //TODO
+    //TODOUNCOMMENTstd::string str(bytes.begin(), bytes.end());
     
-    int elementCount = sscanf(str.c_str(), "%1c%4c,%d,%d,%d,%d,%d,%d", senType, senVersion, &senSteamActual, &senSteamTarget, &senHeatActual, &senCounter, &senHeating, &senPumpActive);
+    int elementCount = sscanf(str.c_str(), "%1c%4c,%d,%d,%d,%d,%d,%d", senType, senVersion, &senSteamActual, &senSteamTarget, &senHeatActual, &senBoostCountdown, &senHeating, &senPumpActive);
     
-    if(debugMode) printf("Element Count: %d \n", elementCount);
-    
+    if(debugMode) {
+        ESP_LOGD("MaraX", "Element Count: %d \n", elementCount);
+    }
     if(elementCount == 3) {
         if(debugMode) {
-            printf("Wasserbehaelter entfernt\n");
-            //ESP_LOGD("MaraX", "Wasserbehaelter entfernt\n");
+            ESP_LOGD("MaraX", "Wasserbehaelter entfernt: %d\n", 1);
         }
         
-        elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senCounter, &senHeating, &senPumpActive);
+        elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senBoostCountdown, &senHeating, &senPumpActive);
     }
     
     if (elementCount >= 7 ) {
         
-        snprintf(buff, sizeof(buff), "%.1s", senType);
-        buffAsStdStr = buff;
+        snprintf(stringBuffer, sizeof(stringBuffer), "%.1s", senType);
+        sensorValueText = stringBuffer;
         if(debugMode) {
-            printf("Ops Mode: %s \n", buffAsStdStr.c_str());
-            //ESP_LOGD("MaraX", "Ops Mode: %s \n", buffAsStdStr.c_str());
+            ESP_LOGD("MaraX", "Ops Mode: %s \n", sensorValueText.c_str());
         }
-        //id(opsType).publish_state(buffAsStdStr.c_str());
+        //TODOUNCOMMENTid(opsType).publish_state(sensorValueText.c_str());
         
-        snprintf(buff, sizeof(buff), "%.4s", senVersion);
-        buffAsStdStr = buff;
+        snprintf(stringBuffer, sizeof(stringBuffer), "%.4s", senVersion);
+        sensorValueText = stringBuffer;
         if(debugMode) {
-            printf("MaraX Firmware: %s \n", buffAsStdStr.c_str());
-            //ESP_LOGD("MaraX", "MaraX Firmware: %s \n", buffAsStdStr.c_str());
+            ESP_LOGD("MaraX", "MaraX Firmware: %s \n", sensorValueText.c_str());
         }
-        //id(coffeeVersion).publish_state(buffAsStdStr.c_str());
+        //TODOUNCOMMENTid(coffeeVersion).publish_state(sensorValueText.c_str());
         
         if(debugMode) {
-            printf("Steam Actual: %d \n", senSteamActual);
-            ////ESP_LOGD("MaraX", "Steam Actual: %d \n", senSteamActual);
+            ESP_LOGD("MaraX", "Steam Actual: %d \n", senSteamActual);
         }
-        //id(steam_actual).publish_state(senSteamActual);
+        //TODOUNCOMMENTid(steam_actual).publish_state(senSteamActual);
         
         if(debugMode) {
-            printf("Steam Target: %d \n", senSteamTarget);
-            //ESP_LOGD("MaraX", "Steam Target: %d \n", senSteamTarget);
+            ESP_LOGD("MaraX", "Steam Target: %d \n", senSteamTarget);
         }
-        //id(steam_target).publish_state(senSteamTarget);
+        //TODOUNCOMMENTid(steam_target).publish_state(senSteamTarget);
         
         if(debugMode) {
-            printf("Heat Actual: %d \n", senHeatActual);
-            //ESP_LOGD("MaraX", "Heat Actual: %d \n", senHeatActual);
+            ESP_LOGD("MaraX", "Heat Actual: %d \n", senHeatActual);
         }
-        //id(heat_actual).publish_state(senHeatActual);
+        //TODOUNCOMMENTid(heat_actual).publish_state(senHeatActual);
         
         if(debugMode) {
-            printf("Time Counter: %d \n", senCounter);
-            //ESP_LOGD("MaraX", "Time Counter: %d \n", senCounter);
+            ESP_LOGD("MaraX", "Boost Countdown: %d \n", senBoostCountdown);
         }
-        //id(time_counter).publish_state(senCounter);
+        //TODOUNCOMMENTid(boost_countdown).publish_state(senBoostCountdown);
         
         if(debugMode) {
-            printf("Is Heating: %d \n", senHeating);
-            //ESP_LOGD("MaraX", "Is Heating: %d \n", senHeating);
+            ESP_LOGD("MaraX", "Is Heating: %d \n", senHeating);
         }
-        //id(heating).publish_state(senHeating);
+        //TODOUNCOMMENTid(heating).publish_state(senHeating);
         
         if(debugMode) {
-            printf("Pumpe an: %d \n", senPumpActive);
-            //ESP_LOGD("MaraX", "Pumpe an: %d \n", senPumpActive);
+            ESP_LOGD("MaraX", "Pumpe an: %d \n", senPumpActive);
         }
         
-        //currentTimestamp = millis(); //TODO
-        currentTimestamp = getCurrentTimestamp(); //TODO remove
+        currentTimestamp = millis();
         
-        //previousTimestamp = id(state_previousTimestamp); //TODO
+        //TODOUNCOMMENTpreviousTimestamp = id(state_previousTimestamp);
         previousTimestamp = state_previousTimestamp; //TODO remove
         // init previous timestamp if needed
         if (previousTimestamp == 0) {
@@ -126,10 +117,10 @@ void readAndPublish(std::string str) {
         
         if(senPumpActive == 1 && currentTimestamp != 0) {
             
-            //lastPumpActiveState = round(id(pumpActive).raw_state); //TODO
+            //TODOUNCOMMENTlastPumpActiveState = round(id(pumpActive).state);
             lastPumpActiveState = pumpActive; //TODO remove
             
-            //timeElapsed = id(state_timeElapsedSincePumpStarted); //TODO
+            //TODOUNCOMMENTtimeElapsed = id(state_timeElapsedSincePumpStarted);
             timeElapsed = state_timeElapsedSincePumpStarted; //TODO remove
             // if pump just started
             if (lastPumpActiveState == 0) {
@@ -137,27 +128,23 @@ void readAndPublish(std::string str) {
                 timeElapsed = 0;
             }
             timeElapsed = timeElapsed + (currentTimestamp - previousTimestamp);
+            if(debugMode) {
+                ESP_LOGD("MaraX", "Time elapsed: %d \n", timeElapsed);
+            }
             
-            //id(state_timeElapsedSincePumpStarted) = timeElapsed; //TODO
+            //TODOUNCOMMENTid(state_timeElapsedSincePumpStarted) = timeElapsed;
             state_timeElapsedSincePumpStarted = timeElapsed; //TODO remove
         }
         
-        //id(state_previousTimestamp) = currentTimestamp; //TODO
+        //TODOUNCOMMENTid(state_previousTimestamp) = currentTimestamp;
         state_previousTimestamp = currentTimestamp; //TODO remove
         
-        //id(pumpActive).publish_state(senPumpActive);
+        //TODOUNCOMMENTid(pumpActive).publish_state(senPumpActive);
         pumpActive = senPumpActive; //TODO remove
     }
     
 }
 
-
-
-// esphome-mara
-//C123b,095,112,063,1095,1\r\n
-
-// other
-//C1.06,116,124,093,0840,1,0\n
 
 int main(int argc, const char * argv[]) {
     
@@ -218,6 +205,24 @@ int main3(int argc, const char * argv[]) {
     std::cout << s << std::endl;
     return(0);
 }
+
+
+// esphome-mara
+//C123b,095,112,063,1095,1\r\n
+
+// other
+//C1.06,116,124,093,0840,1,0\n
+
+// V2: https://github.com/SaibotFlow/marax-monitor
+// Example Data: C1.06,116,124,093,0840,1,0\n
+//C	Machine-Mode: C = CoffeeMode; V = Vapour/SteamMode
+// 1.06	Firmware
+// 116	Current Steam Temperature in Celsius
+// 124	Target Steam Temperature in Celsius
+// 093	Curent Hx Temperature in Celsius
+// 0840	Countdown Boost-Mode
+// 1	Heat state (0 = off; 1= on)
+// 0	Pump state (0 = off; 1= on)
 
 /*
  From: https://github.com/SaibotFlow/marax-monitor/blob/main/marax_monitor/marax_monitor.ino
