@@ -191,7 +191,7 @@ int main(int argc, const char * argv[]) {
 
 
 
-int main3(int argc, const char * argv[]) {
+void parseExperiments() {
     std::string s = "C123b,095,112,063,1095,1\r\n";
     std::string delimiter = ",";
     
@@ -203,7 +203,6 @@ int main3(int argc, const char * argv[]) {
         s.erase(0, pos + delimiter.length());
     }
     std::cout << s << std::endl;
-    return(0);
 }
 
 
