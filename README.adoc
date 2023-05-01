@@ -49,7 +49,7 @@ Disclaimer: my approach involves a (not too invasive) modifictation of the MaraX
 * I used these female to female cables:
 ** AZDelivery Jumper Wire Kabel 40 STK. je 20 cm F2F Female to Female
 ** https://www.amazon.de/dp/B07KYHBVR7 
-* NOTE: SaibotFlow states: For testing you can use the jumper-wires later you should replace them with temperature protected cables.
+* NOTE: https://github.com/SaibotFlow/marax-monitor[SaibotFlow states]: For testing you can use the jumper-wires later you should replace them with temperature protected cables.
 
 
 == Connections
