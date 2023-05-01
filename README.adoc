@@ -49,6 +49,7 @@ Disclaimer: my approach involves a (not too invasive) modifictation of the MaraX
 * I used these female to female cables:
 ** AZDelivery Jumper Wire Kabel 40 STK. je 20 cm F2F Female to Female
 ** https://www.amazon.de/dp/B07KYHBVR7 
+* NOTE: SaibotFlow states: For testing you can use the jumper-wires later you should replace them with temperature protected cables.
 
 
 == Connections
@@ -68,13 +69,17 @@ The plug is connected instead of the orignal F and N plugs and the original ones
 
 At the ESP the RED (plus) cable is in 5V pin, and the BLACK (minus) cable in one of the two GND (Ground) pins.
 
-=== MaraX UART Serial Interface
+=== MaraX UART Serial Interface Pinout
 
 I found some irritating information about the serial interface (CN10) on the web. It may be, that this is differnent for the different Gicar Box Hardware versions, but this would be somehow surprising.
 
-As I only have a V2 here, I used the Infos provided in https://www.kaffee-netz.de/threads/lelit-mara-x-shot-timer.148272/page-2[Kaffee Netz] and it worked without any issues. So I believe its correct this way:
+As I only have a V2 here, I used the Infos provided by user "birdhouse" in https://www.kaffee-netz.de/threads/lelit-mara-x-shot-timer.148272/page-2#post-2197905[Kaffee Netz] and it worked without any issues. His machine is produced in August 2022 and has firmware version C1.10. 
 
-At MaraX Gicar:
+Also SaibotFlow https://github.com/SaibotFlow/marax-monitor#the-interface[confirms this] with his V2 marax-monitor.
+
+My own Version is 1.09, so I believe its correct this way:
+
+At MaraX Gicar (see diagramm above):
 
 * 3 - TX
 * 4 - RX
@@ -85,12 +90,15 @@ At ESP32 this is connected to:
 * 3 (TX) to rx_pin: GPIO17
 * 4 (RX) to tx_pin: GPIO16
 * 5 (GND) to GND (the ESP32 has 2 GND pins, just choose one)
+** GND might be optional, but I read advices that it improves the reliablity.
 
 == Data formats
 
 The coffee machine sends one of the following data about 2-4 times a second:
 
 === MaraX V1 Controller:
+
+* 1.23b (https://www.kaffee-netz.de/threads/lelit-mara-x-shot-timer.148272/page-2#post-2192587[source])
 
 C123b,095,112,063,1095,1
 
@@ -103,6 +111,11 @@ C123b,095,112,063,1095,1
 * Sixth value: Heating on/off
 
 === MaraX V2 Controller:
+
+* This format including the pump information is send by:
+** 1.06 (https://github.com/SaibotFlow/marax-monitor[source])
+** 1.09 (mine)
+** 1.10 (https://github.com/RedNomis/MaraXObserver/blob/master/MaraXObserver.ino[source])
 
 C1.06,116,124,093,0840,1,0\n
 
