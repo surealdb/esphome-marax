@@ -200,7 +200,7 @@ void readAndPublish(std::string str) {
         state_timeElapsedSincePumpStopped = timeElapsedSincePumpStopped; //TODOremove
         
         //TODOUNCOMMENTid(state_lastPumpStoppedTimestamp) = lastPumpStoppedTimestamp;
-        state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODO remove
+        state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODOremove
         
         //TODOUNCOMMENTid(state_lastTimeElapsedBetweenPumpStoppedAndStarted) = lastTimeElapsedBetweenPumpStoppedAndStarted;
         state_lastTimeElapsedBetweenPumpStoppedAndStarted = lastTimeElapsedBetweenPumpStoppedAndStarted;
