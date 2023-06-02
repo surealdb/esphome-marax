@@ -80,23 +80,15 @@ sensor:
   # WiFi Signal sensor.
   - platform: wifi_signal
     name: WiFi Signal
-    update_interval: 20s
-  # coffee pull duration sensor
+    update_interval: 60s
   - platform: template
     name: "Bezugsdauer"
     id: "timeElapsedSincePumpStarted"
     update_interval: 1s
     unit_of_measurement: "s"
     lambda: |-
-      return round(id(state_timeElapsedSincePumpStarted) / 1000);
-  # Duration between to coffee pulls sensor
-  - platform: template
-    name: "Zeit zwischen Bezügen"
-    id: "timeElapsedSincePumpStopped"
-    update_interval: 1s
-    unit_of_measurement: "s"
-    lambda: |-
-      return round(id(state_timeElapsedSincePumpStopped) / 1000);
+      int timeElapsedSincePumpStarted = round(id(state_timeElapsedSincePumpStarted) / 1000);
+      return timeElapsedSincePumpStarted;
 
 binary_sensor:
   - platform: template
@@ -118,15 +110,11 @@ text_sensor:
   # Expose WiFi information as sensors.
   - platform: wifi_info
     ip_address:
-      name: IP
+      name: ${esp_name}
     ssid:
-      name: SSID
+      name: ${esp_name}
     bssid:
-      name: BSSID
-    mac_address:
-      name: Mac-Address
-    scan_results:
-      name: Wifi Scan
+      name: ${esp_name}
   - platform: template
     name: "Betriebsmodus"
     id: "opsType"
@@ -137,7 +125,7 @@ text_sensor:
         - V -> V Steam Modus
         - X -> Offline
         - + -> MaraX Modus
-    update_interval: 10s
+    update_interval: 30s
   - platform: template
     name: "Firmware Version"
     id: "coffeeVersion"
@@ -151,14 +139,6 @@ globals:
     restore_value: no
     initial_value: '0'
   - id: state_timeElapsedSincePumpStarted
-    type: uint32_t
-    restore_value: no
-    initial_value: '0'
-  - id: state_lastPumpStoppedTimestamp
-    type: uint32_t
-    restore_value: no
-    initial_value: '0'
-  - id: state_timeElapsedSincePumpStopped
     type: uint32_t
     restore_value: no
     initial_value: '0'
@@ -191,9 +171,7 @@ uart:
           
           uint32_t previousTimestamp=0;
           uint32_t currentTimestamp=0;
-          uint32_t timeElapsedSincePumpStarted=0;
-          uint32_t timeElapsedSincePumpStopped=0;
-          uint32_t lastPumpStoppedTimestamp = 0;
+          uint32_t timeElapsed=0;
           int lastPumpActiveState=0;
           
           char stringBuffer[10];
@@ -208,7 +186,7 @@ uart:
           }
           if(elementCount == 3) {
               if(debugMode) {
-                  ESP_LOGD("MaraX", "Water container is removed: %d\n", 1);
+                  ESP_LOGD("MaraX", "Wasserbehaelter entfernt: %d\n", 1);
               }
               
               elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senBoostCountdown, &senHeating, &senPumpActive);
@@ -256,90 +234,38 @@ uart:
               id(heating).publish_state(senHeating);
               
               if(debugMode) {
-                  ESP_LOGD("MaraX", "Pump is active: %d \n", senPumpActive);
+                  ESP_LOGD("MaraX", "Pumpe an: %d \n", senPumpActive);
               }
               
               currentTimestamp = millis();
               
               previousTimestamp = id(state_previousTimestamp);
               //previousTimestamp = state_previousTimestamp; //TODO remove
-              
               // init previous timestamp if needed
               if (previousTimestamp == 0) {
                   previousTimestamp = currentTimestamp;
               }
               
-              // READ current global state values
-              
-              lastPumpActiveState = round(id(pumpActive).state);
-              //lastPumpActiveState = pumpActive; //TODO remove
-              
-              timeElapsedSincePumpStarted = id(state_timeElapsedSincePumpStarted);
-              //timeElapsedSincePumpStarted = state_timeElapsedSincePumpStarted; //TODO remove
-              
-              timeElapsedSincePumpStopped = id(state_timeElapsedSincePumpStopped);
-              //timeElapsedSincePumpStopped = state_timeElapsedSincePumpStopped; //TODO remove
-              
-              lastPumpStoppedTimestamp = id(state_lastPumpStoppedTimestamp);
-              //lastPumpStoppedTimestamp = state_lastPumpStoppedTimestamp; //TODO remove
-              
-              
-              // while pump is active
               if(senPumpActive == 1 && currentTimestamp != 0) {
                   
-                  // if the pump just started to be active
+                  lastPumpActiveState = round(id(pumpActive).state);
+                  //lastPumpActiveState = pumpActive; //TODO remove
+                  
+                  timeElapsed = id(state_timeElapsedSincePumpStarted);
+                  //timeElapsed = state_timeElapsedSincePumpStarted; //TODO remove
+                  // if pump just started
                   if (lastPumpActiveState == 0) {
-                      if(debugMode) {
-                          ESP_LOGD("MaraX", "The pump just started to be active as last state was: %d \n", lastPumpActiveState);
-                      }
-                      // reset time elapsed since pump started counter
-                      timeElapsedSincePumpStarted = 0;
-                                      
-                  } else {
-                      
-                      //add up the elapsed "pump is active"-time
-                      timeElapsedSincePumpStarted = timeElapsedSincePumpStarted + (currentTimestamp - previousTimestamp);
-                      if(debugMode) {
-                          ESP_LOGD("MaraX", "Time elapsed since pump started to be active: %d \n", timeElapsedSincePumpStarted);
-                      }
+                      // reset time elapsed counter
+                      timeElapsed = 0;
                   }
-              }
-              
-              // while the pump is NOT active
-              if(senPumpActive == 0 && currentTimestamp != 0) {
+                  timeElapsed = timeElapsed + (currentTimestamp - previousTimestamp);
+                  if(debugMode) {
+                      ESP_LOGD("MaraX", "Time elapsed: %d \n", timeElapsed);
+                  }
                   
-                  // when the pump has JUST stopped, but was active before
-                  if(lastPumpActiveState == 1) {
-                      
-                      // save the timestamp when that Stop-Event happend
-                      lastPumpStoppedTimestamp = currentTimestamp;
-                      if(debugMode) {
-                          ESP_LOGD("MaraX", "Pump has just stopped, but was active before. Stop event happend at timestamp: %d \n", lastPumpStoppedTimestamp);
-                      }
-                      // reset time elapsed since pump stopped counter
-                      timeElapsedSincePumpStopped = 0;
-                  }
-                  // if pump is stopped, but was already active before (using the lastPumpStoppedTimestamp as an indicator for that)
-                  else if (lastPumpStoppedTimestamp != 0) {
-                  
-                      //  increment the timeElapsedSincePumpStopped by the time elapsed meanwhile
-                      timeElapsedSincePumpStopped = timeElapsedSincePumpStopped + (currentTimestamp - previousTimestamp);
-                      if(debugMode) {
-                          ESP_LOGD("MaraX", "Pump is stopped, but was active before at least once. Time elapsed stop of the pump: %d \n", timeElapsedSincePumpStopped);
-                      }
-                  }
+                  id(state_timeElapsedSincePumpStarted) = timeElapsed;
+                  //state_timeElapsedSincePumpStarted = timeElapsed; //TODO remove
               }
-
-              
-              // finally publish everything
-              // Pump Active State (this way we have the prev. Pump State available detectin of "just started" or "just stopped" events)
-              
-              // publish result of time elapsed since pump started
-              id(state_timeElapsedSincePumpStarted) = timeElapsedSincePumpStarted;
-              //state_timeElapsedSincePumpStarted = timeElapsedSincePumpStarted; //TODO remove
-              
-              id(state_lastPumpStoppedTimestamp) = lastPumpStoppedTimestamp;
-              //state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODO remove
               
               id(state_previousTimestamp) = currentTimestamp;
               //state_previousTimestamp = currentTimestamp; //TODO remove

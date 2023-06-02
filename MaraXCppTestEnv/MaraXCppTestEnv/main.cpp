@@ -16,8 +16,8 @@
 int pumpActive = 0;
 uint32_t state_previousTimestamp = 0;
 uint32_t state_timeElapsedSincePumpStarted = 0;
+uint32_t state_timeElapsedSincePumpStopped = 0;
 uint32_t state_lastPumpStoppedTimestamp = 0;
-uint32_t state_timeElapsedBetweenLastPumpStopAndStart = 0;
 
 uint32_t millis() {
     using namespace std::chrono;
@@ -43,8 +43,8 @@ void readAndPublish(std::string str) {
     uint32_t previousTimestamp=0;
     uint32_t currentTimestamp=0;
     uint32_t timeElapsedSincePumpStarted=0;
+    uint32_t timeElapsedSincePumpStopped=0;
     uint32_t lastPumpStoppedTimestamp = 0;
-    uint32_t timeElapsedBetweenLastPumpStopAndStart=0;
     int lastPumpActiveState=0;
     
     char stringBuffer[10];
@@ -112,14 +112,13 @@ void readAndPublish(std::string str) {
         
         currentTimestamp = millis();
         
+        // READ current global state values
+        
         //TODOUNCOMMENTpreviousTimestamp = id(state_previousTimestamp);
         previousTimestamp = state_previousTimestamp; //TODO remove
-        // init previous timestamp if needed
         if (previousTimestamp == 0) {
             previousTimestamp = currentTimestamp;
         }
-        
-        // READ current global state values
         
         //TODOUNCOMMENTlastPumpActiveState = round(id(pumpActive).state);
         lastPumpActiveState = pumpActive; //TODO remove
@@ -127,11 +126,12 @@ void readAndPublish(std::string str) {
         //TODOUNCOMMENTtimeElapsedSincePumpStarted = id(state_timeElapsedSincePumpStarted);
         timeElapsedSincePumpStarted = state_timeElapsedSincePumpStarted; //TODO remove
         
+        //TODOUNCOMMENTtimeElapsedSincePumpStopped = id(state_timeElapsedSincePumpStopped);
+        timeElapsedSincePumpStopped = state_timeElapsedSincePumpStopped; //TODO remove
+        
         //TODOUNCOMMENTlastPumpStoppedTimestamp = id(state_lastPumpStoppedTimestamp);
         lastPumpStoppedTimestamp = state_lastPumpStoppedTimestamp; //TODO remove
         
-        //TODOUNCOMMENTtimeElapsedBetweenLastPumpStopAndStart = id(state_timeElapsedBetweenLastPumpStopAndStart);
-        timeElapsedBetweenLastPumpStopAndStart = state_timeElapsedBetweenLastPumpStopAndStart; // TODO Remove
         
         // while pump is active
         if(senPumpActive == 1 && currentTimestamp != 0) {
@@ -141,22 +141,9 @@ void readAndPublish(std::string str) {
                 if(debugMode) {
                     ESP_LOGD("MaraX", "The pump just started to be active as last state was: %d \n", lastPumpActiveState);
                 }
-                // reset time elapsed counter
+                // reset time elapsed since pump started counter
                 timeElapsedSincePumpStarted = 0;
-                
-                // set the elapsed time since the pump was active last time
-                // if the pump never stopped before, set time elapsed to 0
-                if(lastPumpStoppedTimestamp == 0) {
-                    timeElapsedBetweenLastPumpStopAndStart = 0;
-                } else {
-                    timeElapsedBetweenLastPumpStopAndStart = currentTimestamp - lastPumpStoppedTimestamp;
-                }
-                if(debugMode) {
-                    ESP_LOGD("MaraX", "Time elapsed between stop and restart of the pump: %d \n", timeElapsedBetweenLastPumpStopAndStart);
-                }
-                //TODOUNCOMMENTid(state_timeElapsedBetweenLastPumpStopAndStart) = timeElapsedBetweenLastPumpStopAndStart;
-                state_timeElapsedBetweenLastPumpStopAndStart = timeElapsedBetweenLastPumpStopAndStart; // TODO remove
-                
+                                
             } else {
                 
                 //add up the elapsed "pump is active"-time
@@ -165,24 +152,44 @@ void readAndPublish(std::string str) {
                     ESP_LOGD("MaraX", "Time elapsed since pump started to be active: %d \n", timeElapsedSincePumpStarted);
                 }
             }
+        }
+        
+        // while the pump is NOT active
+        if(senPumpActive == 0 && currentTimestamp != 0) {
             
-            // publish result of time elapsed since pump started
-            //TODOUNCOMMENTid(state_timeElapsedSincePumpStarted) = timeElapsedSincePumpStarted;
-            state_timeElapsedSincePumpStarted = timeElapsedSincePumpStarted; //TODO remove
-        }
-        
-        // when the pump has just stopped, but was active before, save the timestamp when that Stop-Event happend
-        if(senPumpActive == 0 && lastPumpActiveState == 1) {
-            if(debugMode) {
-                ESP_LOGD("MaraX", "Pump has just stopped, but was active before. Stop event happend at timestamp: %d \n", currentTimestamp);
+            // when the pump has JUST stopped, but was active before
+            if(lastPumpActiveState == 1) {
+                
+                // save the timestamp when that Stop-Event happend
+                lastPumpStoppedTimestamp = currentTimestamp;
+                if(debugMode) {
+                    ESP_LOGD("MaraX", "Pump has just stopped, but was active before. Stop event happend at timestamp: %d \n", lastPumpStoppedTimestamp);
+                }
+                // reset time elapsed since pump stopped counter
+                timeElapsedSincePumpStopped = 0;
             }
-            //TODOUNCOMMENTid(state_lastPumpStoppedTimestamp) = currentTimestamp;
-            state_lastPumpStoppedTimestamp = currentTimestamp; // TODO remove
+            // if pump is stopped, but was already active before (using the lastPumpStoppedTimestamp as an indicator for that)
+            else if (lastPumpStoppedTimestamp != 0) {
+             
+                //  increment the timeElapsedSincePumpStopped by the time elapsed meanwhile
+                timeElapsedSincePumpStopped = timeElapsedSincePumpStopped + (currentTimestamp - previousTimestamp);
+                if(debugMode) {
+                    ESP_LOGD("MaraX", "Pump is stopped, but was active before at least once. Time elapsed stop of the pump: %d \n", timeElapsedSincePumpStopped);
+                }
+            }
         }
+
         
+        // finally publish everything
+        // Pump Active State (this way we have the prev. Pump State available detectin of "just started" or "just stopped" events)
         
-        // fianlly afterwards update the prev. Timestamp and the Pump Active State
-        // this way we have the prev. Pump State available detectin of "just started" or "just stopped§ events
+        // publish result of time elapsed since pump started
+        //TODOUNCOMMENTid(state_timeElapsedSincePumpStarted) = timeElapsedSincePumpStarted;
+        state_timeElapsedSincePumpStarted = timeElapsedSincePumpStarted; //TODO remove
+        
+        //TODOUNCOMMENTid(state_lastPumpStoppedTimestamp) = lastPumpStoppedTimestamp;
+        state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODO remove
+        
         //TODOUNCOMMENTid(state_previousTimestamp) = currentTimestamp;
         state_previousTimestamp = currentTimestamp; //TODO remove
         
@@ -231,8 +238,20 @@ int main(int argc, const char * argv[]) {
     //Mit Tank, Modus 0, Temp 0, Pumpe AUS
     str = "+1.09,033,138,031,0000,1,0\r\n";
     readAndPublish(str);
+    //Mit Tank, Modus 0, Temp 0, Pumpe immer noch AUS
+    str = "+1.09,033,138,031,0000,1,0\r\n";
+    readAndPublish(str);
     //Mit Tank, Modus 0, Temp 0, Pumpe WIEDER AN
     str = "+1.09,033,138,031,0000,1,1\r\n";
+    readAndPublish(str);
+    //Mit Tank, Modus 0, Temp 0, Pumpe an
+    str = "+1.09,032,138,030,0000,1,1\r\n";
+    readAndPublish(str);
+    //Mit Tank, Modus 0, Temp 0, Pumpe AUS
+    str = "+1.09,033,138,031,0000,1,0\r\n";
+    readAndPublish(str);
+    //Mit Tank, Modus 0, Temp 0, Pumpe immer noch AUS
+    str = "+1.09,033,138,031,0000,1,0\r\n";
     readAndPublish(str);
     
     return(0);
