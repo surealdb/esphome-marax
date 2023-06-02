@@ -97,13 +97,13 @@ sensor:
     unit_of_measurement: "s"
     lambda: |-
       return round(id(state_timeElapsedSincePumpStopped) / 1000);
-
-binary_sensor:
   - platform: template
     name: "Heizt"
     id: "heating"
-    # not allowed here
-    # update_interval: 5s
+    update_interval: 1s
+    unit_of_measurement: "i/o"
+
+binary_sensor:
   - platform: template
     name: "Pumpe an"
     id: "pumpActive"
