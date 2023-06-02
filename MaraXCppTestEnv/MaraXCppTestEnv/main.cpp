@@ -135,7 +135,7 @@ void readAndPublish(std::string str) {
         lastPumpStoppedTimestamp = state_lastPumpStoppedTimestamp; //TODOremove
         
         //TODOUNCOMMENTlastTimeElapsedBetweenPumpStoppedAndStarted = id(state_lastTimeElapsedBetweenPumpStoppedAndStarted);
-        lastTimeElapsedBetweenPumpStoppedAndStarted = state_lastTimeElapsedBetweenPumpStoppedAndStarted;
+        lastTimeElapsedBetweenPumpStoppedAndStarted = state_lastTimeElapsedBetweenPumpStoppedAndStarted; //TODOremove
         
         
         // while pump is active
@@ -203,7 +203,7 @@ void readAndPublish(std::string str) {
         state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODOremove
         
         //TODOUNCOMMENTid(state_lastTimeElapsedBetweenPumpStoppedAndStarted) = lastTimeElapsedBetweenPumpStoppedAndStarted;
-        state_lastTimeElapsedBetweenPumpStoppedAndStarted = lastTimeElapsedBetweenPumpStoppedAndStarted;
+        state_lastTimeElapsedBetweenPumpStoppedAndStarted = lastTimeElapsedBetweenPumpStoppedAndStarted; // TODOremove
         
         //TODOUNCOMMENTid(state_previousTimestamp) = currentTimestamp;
         state_previousTimestamp = currentTimestamp; //TODOremove

@@ -291,7 +291,6 @@ uart:
               lastPumpStoppedTimestamp = id(state_lastPumpStoppedTimestamp);
               
               lastTimeElapsedBetweenPumpStoppedAndStarted = id(state_lastTimeElapsedBetweenPumpStoppedAndStarted);
-              lastTimeElapsedBetweenPumpStoppedAndStarted = state_lastTimeElapsedBetweenPumpStoppedAndStarted;
               
               
               // while pump is active
@@ -354,10 +353,8 @@ uart:
               id(state_timeElapsedSincePumpStopped) = timeElapsedSincePumpStopped;
               
               id(state_lastPumpStoppedTimestamp) = lastPumpStoppedTimestamp;
-              state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODO remove
               
               id(state_lastTimeElapsedBetweenPumpStoppedAndStarted) = lastTimeElapsedBetweenPumpStoppedAndStarted;
-              state_lastTimeElapsedBetweenPumpStoppedAndStarted = lastTimeElapsedBetweenPumpStoppedAndStarted;
               
               id(state_previousTimestamp) = currentTimestamp;
               
