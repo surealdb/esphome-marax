@@ -6,6 +6,74 @@ Robert Manyos build an integration for my Lelit MaraX Espresso Machine for Home 
 
 This integration is based on this great https://www.reddit.com/r/espresso/comments/hft5zv/data_visualisation_lelit_marax_mod[Reddit article]
 
+== Some Links (TODO)
+
+* https://github.com/alexrus/marax_timer 
+* https://github.com/bancbanus/marax_monitor
+* https://github.com/SaibotFlow/marax-monitor 
+* https://github.com/RedNomis/MaraXObserver/blob/master/MaraXObserver.ino
+* https://www.kaffee-netz.de/threads/vorstellung-projekt-espresso-shot-timer-mit-temperaturanzeige.85390/page-27#post-2072253
+* https://www.kaffee-netz.de/threads/lelit-mara-x-shot-timer.148272/page-3
+* https://www.kaffee-netz.de/threads/lelit-marax-pl62x.125870/page-14
+* https://esphome.io/components/sensor/custom.html
+* https://esphome.io/components/sensor/wifi_signal.html
+* https://esphome.io/custom/uart.html
+* https://esphome.io/cookbook/lambda_magic.html
+* https://github.com/esphome/esphome
+* https://github.com/esphome/feature-requests/issues/1447
+* https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/log.html
+* https://community.home-assistant.io/t/how-to-uart-read-without-custom-component/491950
+* https://esphome.io/components/sensor/template.html
+* https://community.home-assistant.io/t/* how-to-pass-a-variable-from-home-assistant-front-end-to-esphome/183845
+* https://community.home-assistant.io/t/how-to-pass-a-variable-from-home-assistant-front-end-to-esphome/183845
+* https://community.home-assistant.io/t/how-to-update-a-globals-variable/338882
+* https://www.reddit.com/r/Esphome/comments/mszx2m/publishing_a_global_variable_to_home_assistant/
+* https://github.com/esphome/esphome-docs/blob/current/components/sensor/uptime.rst
+* https://esphome.io/components/sensor/template.html
+* https://github.com/esphome/esphome
+* https://www.esp32.com/viewtopic.php?t=2499
+* https://esphome.io/guides/automations.html#global-variables
+* https://esphome.io/components/esphome.html#esphome-libraries
+* https://esphome.io/components/esphome.html#esphome-includes
+* https://esphome.io/components/esphome.html
+* https://community.home-assistant.io/t/how-to-uart-read-without-custom-component/491950
+* https://community.home-assistant.io/t/time-to-c-invalid-conversion-from-uint8-t/485089
+* https://community.home-assistant.io/t/how-to-include-standard-c-header-files-in-esphome-yaml-file/354128
+* https://github.com/esphome/issues/issues/3135
+* https://esphome.io/api/esp32_2core_8cpp_source.html
+* https://www.best-microcontroller-projects.com/arduino-millis.html
+* https://forum.arduino.cc/t/using-millis-in-my-own-library/462562
+* https://reference.arduino.cc/reference/en/language/functions/time/millis/
+* https://community.home-assistant.io/t/measure-switchon-time/152484/3
+* https://community.home-assistant.io/t/time-sensor-like-a-stop-watch/180663
+* https://esphome.io/components/sensor/index.html
+* https://esphome.io/components/time/index.html
+* https://community.home-assistant.io/t/measure-switchon-time/152484
+* https://esphome.io/components/sensor/custom.html#logging-in-custom-components
+* https://favtutor.com/blogs/split-string-cpp
+* https://www.tutorialspoint.com/c_standard_library/c_function_sscanf.htm
+* https://www.youtube.com/watch?v=W8e0sJmxeO8
+* https://www.kaffee-netz.de/threads/vorstellung-projekt-espresso-shot-timer-mit-temperaturanzeige.85390/page-27#post-2072253
+* https://github.com/RedNomis/MaraXObserver/blob/master/MaraXObserver.ino
+* https://www.kaffee-netz.de/threads/lelit-mara-x-shot-timer.148272/
+* https://community.home-assistant.io/t/home-assistant-integration-for-lelit-marax-with-esphome/530847
+* https://github.com/benovic/marax_display/blob/main/marax_display/marax_display.ino
+* https://www.reddit.com/r/espresso/comments/hft5zv/data_visualisation_lelit_marax_mod/
+* https://github.com/surealdb/esphome-marax/blob/main/coffee.yaml
+* https://esphome.io/components/binary_sensor/index.html#binary-sensor-is-on-binary-sensor-is-off-condition
+* https://esphome.io/components/sensor/index.html#config-sensor
+* https://unsinnsbasis.de/esp32-pico-kit/
+* https://unsinnsbasis.de/esp32-pin-belegung/
+* https://unsinnsbasis.de/esp32-erste-schritte/#Pin-Belegung_des_ESP32
+* https://community.home-assistant.io/t/home-assistant-integration-for-lelit-marax-with-esphome/530847
+* https://randomnerdtutorials.com/esp32-pinout-reference-gpios/
+* https://www.simon42.com/esphome-esp32-esp8266-grundlagen/#ressourcen
+* https://community.home-assistant.io/t/home-assistant-integration-for-lelit-marax-with-esphome/530847
+* https://coffeetime.freeflarum.com/d/417-lelit-mara-x-v1-and-v2-the-differences/38
+
+
+
+
 == My adjustments
 
 I'm very thankful for that work, but for my use case I wanted to add some adjustments:
