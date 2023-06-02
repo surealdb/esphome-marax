@@ -37,6 +37,7 @@ This integration is based on this great https://www.reddit.com/r/espresso/commen
 * https://esphome.io/components/esphome.html#esphome-includes
 * https://esphome.io/components/esphome.html
 * https://community.home-assistant.io/t/how-to-uart-read-without-custom-component/491950
+* https://community.home-assistant.io/t/unable-to-get-uart-to-receive/451527
 * https://community.home-assistant.io/t/time-to-c-invalid-conversion-from-uint8-t/485089
 * https://community.home-assistant.io/t/how-to-include-standard-c-header-files-in-esphome-yaml-file/354128
 * https://github.com/esphome/issues/issues/3135

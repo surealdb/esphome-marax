@@ -97,6 +97,15 @@ sensor:
     unit_of_measurement: "s"
     lambda: |-
       return round(id(state_timeElapsedSincePumpStopped) / 1000);
+  # Duration between Stop and Start. Only updated on start, so the same as "Duration between to coffee pulls sensor" but for history reasons separatly
+  - platform: template
+    name: "Zeit zwischen Stop und Start"
+    id: "lastTimeElapsedBetweenPumpStoppedAndStarted"
+    update_interval: 1s
+    unit_of_measurement: "s"
+    lambda: |-
+      return round(id(state_lastTimeElapsedBetweenPumpStoppedAndStarted) / 1000);
+  # Sensore wether HX is heating (1.0) or not
   - platform: template
     name: "Heizt"
     id: "heating"
@@ -162,6 +171,10 @@ globals:
     type: uint32_t
     restore_value: no
     initial_value: '0'
+  - id: state_lastTimeElapsedBetweenPumpStoppedAndStarted
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
 
 
 uart:
@@ -194,12 +207,13 @@ uart:
           uint32_t timeElapsedSincePumpStarted=0;
           uint32_t timeElapsedSincePumpStopped=0;
           uint32_t lastPumpStoppedTimestamp = 0;
+          uint32_t lastTimeElapsedBetweenPumpStoppedAndStarted = 0;
           int lastPumpActiveState=0;
           
           char stringBuffer[10];
           std::string sensorValueText;
           
-          std::string str(bytes.begin(), bytes.end());
+          //TODOUNCOMMENTstd::string str(bytes.begin(), bytes.end());
           
           int elementCount = sscanf(str.c_str(), "%1c%4c,%d,%d,%d,%d,%d,%d", senType, senVersion, &senSteamActual, &senSteamTarget, &senHeatActual, &senBoostCountdown, &senHeating, &senPumpActive);
           
@@ -221,39 +235,39 @@ uart:
               if(debugMode) {
                   ESP_LOGD("MaraX", "Ops Mode: %s \n", sensorValueText.c_str());
               }
-              id(opsType).publish_state(sensorValueText.c_str());
+              //TODOUNCOMMENTid(opsType).publish_state(sensorValueText.c_str());
               
               snprintf(stringBuffer, sizeof(stringBuffer), "%.4s", senVersion);
               sensorValueText = stringBuffer;
               if(debugMode) {
                   ESP_LOGD("MaraX", "MaraX Firmware: %s \n", sensorValueText.c_str());
               }
-              id(coffeeVersion).publish_state(sensorValueText.c_str());
+              //TODOUNCOMMENTid(coffeeVersion).publish_state(sensorValueText.c_str());
               
               if(debugMode) {
                   ESP_LOGD("MaraX", "Steam Actual: %d \n", senSteamActual);
               }
-              id(steam_actual).publish_state(senSteamActual);
+              //TODOUNCOMMENTid(steam_actual).publish_state(senSteamActual);
               
               if(debugMode) {
                   ESP_LOGD("MaraX", "Steam Target: %d \n", senSteamTarget);
               }
-              id(steam_target).publish_state(senSteamTarget);
+              //TODOUNCOMMENTid(steam_target).publish_state(senSteamTarget);
               
               if(debugMode) {
                   ESP_LOGD("MaraX", "Heat Actual: %d \n", senHeatActual);
               }
-              id(heat_actual).publish_state(senHeatActual);
+              //TODOUNCOMMENTid(heat_actual).publish_state(senHeatActual);
               
               if(debugMode) {
                   ESP_LOGD("MaraX", "Boost Countdown: %d \n", senBoostCountdown);
               }
-              id(boost_countdown).publish_state(senBoostCountdown);
+              //TODOUNCOMMENTid(boost_countdown).publish_state(senBoostCountdown);
               
               if(debugMode) {
                   ESP_LOGD("MaraX", "Is Heating: %d \n", senHeating);
               }
-              id(heating).publish_state(senHeating);
+              //TODOUNCOMMENTid(heating).publish_state(senHeating);
               
               if(debugMode) {
                   ESP_LOGD("MaraX", "Pump is active: %d \n", senPumpActive);
@@ -263,23 +277,26 @@ uart:
               
               // READ current global state values
               
-              previousTimestamp = id(state_previousTimestamp);
-              //previousTimestamp = state_previousTimestamp; //TODO remove
+              //TODOUNCOMMENTpreviousTimestamp = id(state_previousTimestamp);
+              previousTimestamp = state_previousTimestamp; //TODOremove
               if (previousTimestamp == 0) {
                   previousTimestamp = currentTimestamp;
               }
               
-              lastPumpActiveState = round(id(pumpActive).state);
-              //lastPumpActiveState = pumpActive; //TODO remove
+              //TODOUNCOMMENTlastPumpActiveState = round(id(pumpActive).state);
+              lastPumpActiveState = pumpActive; //TODOremove
               
-              timeElapsedSincePumpStarted = id(state_timeElapsedSincePumpStarted);
-              //timeElapsedSincePumpStarted = state_timeElapsedSincePumpStarted; //TODO remove
+              //TODOUNCOMMENTtimeElapsedSincePumpStarted = id(state_timeElapsedSincePumpStarted);
+              timeElapsedSincePumpStarted = state_timeElapsedSincePumpStarted; //TODOremove
               
-              timeElapsedSincePumpStopped = id(state_timeElapsedSincePumpStopped);
-              //timeElapsedSincePumpStopped = state_timeElapsedSincePumpStopped; //TODO remove
+              //TODOUNCOMMENTtimeElapsedSincePumpStopped = id(state_timeElapsedSincePumpStopped);
+              timeElapsedSincePumpStopped = state_timeElapsedSincePumpStopped; //TODOremove
               
-              lastPumpStoppedTimestamp = id(state_lastPumpStoppedTimestamp);
-              //lastPumpStoppedTimestamp = state_lastPumpStoppedTimestamp; //TODO remove
+              //TODOUNCOMMENTlastPumpStoppedTimestamp = id(state_lastPumpStoppedTimestamp);
+              lastPumpStoppedTimestamp = state_lastPumpStoppedTimestamp; //TODOremove
+              
+              //TODOUNCOMMENTlastTimeElapsedBetweenPumpStoppedAndStarted = id(state_lastTimeElapsedBetweenPumpStoppedAndStarted);
+              lastTimeElapsedBetweenPumpStoppedAndStarted = state_lastTimeElapsedBetweenPumpStoppedAndStarted;
               
               
               // while pump is active
@@ -292,6 +309,12 @@ uart:
                       }
                       // reset time elapsed since pump started counter
                       timeElapsedSincePumpStarted = 0;
+                      
+                      // store time since pump stopped last time and this start of the pump for history keeping reasons
+                      lastTimeElapsedBetweenPumpStoppedAndStarted = timeElapsedSincePumpStopped;
+                      if(debugMode) {
+                          ESP_LOGD("MaraX", "Store time elapsed between last stop and this new start of the pump: %d \n", lastTimeElapsedBetweenPumpStoppedAndStarted);
+                      }
                                       
                   } else {
                       
@@ -323,7 +346,7 @@ uart:
                       //  increment the timeElapsedSincePumpStopped by the time elapsed meanwhile
                       timeElapsedSincePumpStopped = timeElapsedSincePumpStopped + (currentTimestamp - previousTimestamp);
                       if(debugMode) {
-                          ESP_LOGD("MaraX", "Pump is stopped, but was active before at least once. Time elapsed stop of the pump: %d \n", timeElapsedSincePumpStopped);
+                          ESP_LOGD("MaraX", "Pump is stopped, but was active before at least once. Time elapsed since stop of the pump: %d \n", timeElapsedSincePumpStopped);
                       }
                   }
               }
@@ -331,18 +354,21 @@ uart:
               
               // finally publish everything
               
-              id(state_timeElapsedSincePumpStarted) = timeElapsedSincePumpStarted;
-              //state_timeElapsedSincePumpStarted = timeElapsedSincePumpStarted; //TODO remove
+              //TODOUNCOMMENTid(state_timeElapsedSincePumpStarted) = timeElapsedSincePumpStarted;
+              state_timeElapsedSincePumpStarted = timeElapsedSincePumpStarted; //TODOremove
               
-              id(state_timeElapsedSincePumpStopped) = timeElapsedSincePumpStopped;
-              //state_timeElapsedSincePumpStopped = timeElapsedSincePumpStopped; //TODO remove
+              //TODOUNCOMMENTid(state_timeElapsedSincePumpStopped) = timeElapsedSincePumpStopped;
+              state_timeElapsedSincePumpStopped = timeElapsedSincePumpStopped; //TODOremove
               
-              id(state_lastPumpStoppedTimestamp) = lastPumpStoppedTimestamp;
-              //state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODO remove
+              //TODOUNCOMMENTid(state_lastPumpStoppedTimestamp) = lastPumpStoppedTimestamp;
+              state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODO remove
               
-              id(state_previousTimestamp) = currentTimestamp;
-              //state_previousTimestamp = currentTimestamp; //TODO remove
+              //TODOUNCOMMENTid(state_lastTimeElapsedBetweenPumpStoppedAndStarted) = lastTimeElapsedBetweenPumpStoppedAndStarted;
+              state_lastTimeElapsedBetweenPumpStoppedAndStarted = lastTimeElapsedBetweenPumpStoppedAndStarted;
               
-              id(pumpActive).publish_state(senPumpActive);
-              //pumpActive = senPumpActive; //TODO remove
+              //TODOUNCOMMENTid(state_previousTimestamp) = currentTimestamp;
+              state_previousTimestamp = currentTimestamp; //TODOremove
+              
+              //TODOUNCOMMENTid(pumpActive).publish_state(senPumpActive);
+              pumpActive = senPumpActive; //TODOremove
           }
