@@ -81,14 +81,22 @@ sensor:
   - platform: wifi_signal
     name: WiFi Signal
     update_interval: 20s
+  # coffee pull duration sensor
   - platform: template
     name: "Bezugsdauer"
     id: "timeElapsedSincePumpStarted"
     update_interval: 1s
     unit_of_measurement: "s"
     lambda: |-
-      int timeElapsedSincePumpStarted = round(id(state_timeElapsedSincePumpStarted) / 1000);
-      return timeElapsedSincePumpStarted;
+      return round(id(state_timeElapsedSincePumpStarted) / 1000);
+  # Duration between to coffee pulls sensor
+  - platform: template
+    name: "Zeit zwischen Bezügen"
+    id: "timeElapsedBetweenLastPumpStopAndStart"
+    update_interval: 1s
+    unit_of_measurement: "s"
+    lambda: |-
+      return round(id(state_timeElapsedBetweenLastPumpStopAndStart) / 1000);
 
 binary_sensor:
   - platform: template
@@ -146,6 +154,14 @@ globals:
     type: uint32_t
     restore_value: no
     initial_value: '0'
+  - id: state_lastPumpStoppedTimestamp
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: state_timeElapsedBetweenLastPumpStopAndStart
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
 
 
 uart:
@@ -175,7 +191,9 @@ uart:
           
           uint32_t previousTimestamp=0;
           uint32_t currentTimestamp=0;
-          uint32_t timeElapsed=0;
+          uint32_t timeElapsedSincePumpStarted=0;
+          uint32_t lastPumpStoppedTimestamp = 0;
+          uint32_t timeElapsedBetweenLastPumpStopAndStart=0;
           int lastPumpActiveState=0;
           
           char stringBuffer[10];
@@ -190,7 +208,7 @@ uart:
           }
           if(elementCount == 3) {
               if(debugMode) {
-                  ESP_LOGD("MaraX", "Wasserbehaelter entfernt: %d\n", 1);
+                  ESP_LOGD("MaraX", "Water container is removed: %d\n", 1);
               }
               
               elementCount = sscanf(str.c_str(), "%1c%4c,%d,%3c,%d,%d,%d,%d", senType, senVersion, &senSteamActual, senSteamTargetStr, &senHeatActual, &senBoostCountdown, &senHeating, &senPumpActive);
@@ -238,7 +256,7 @@ uart:
               id(heating).publish_state(senHeating);
               
               if(debugMode) {
-                  ESP_LOGD("MaraX", "Pumpe an: %d \n", senPumpActive);
+                  ESP_LOGD("MaraX", "Pump is active: %d \n", senPumpActive);
               }
               
               currentTimestamp = millis();
@@ -250,27 +268,70 @@ uart:
                   previousTimestamp = currentTimestamp;
               }
               
+              // READ current global state values
+              
+              lastPumpActiveState = round(id(pumpActive).state);
+              //lastPumpActiveState = pumpActive; //TODO remove
+              
+              timeElapsedSincePumpStarted = id(state_timeElapsedSincePumpStarted);
+              //timeElapsedSincePumpStarted = state_timeElapsedSincePumpStarted; //TODO remove
+              
+              lastPumpStoppedTimestamp = id(state_lastPumpStoppedTimestamp);
+              //lastPumpStoppedTimestamp = state_lastPumpStoppedTimestamp; //TODO remove
+              
+              timeElapsedBetweenLastPumpStopAndStart = id(state_timeElapsedBetweenLastPumpStopAndStart);
+              timeElapsedBetweenLastPumpStopAndStart = state_timeElapsedBetweenLastPumpStopAndStart; // TODO Remove
+              
+              // while pump is active
               if(senPumpActive == 1 && currentTimestamp != 0) {
                   
-                  lastPumpActiveState = round(id(pumpActive).state);
-                  //lastPumpActiveState = pumpActive; //TODO remove
-                  
-                  timeElapsed = id(state_timeElapsedSincePumpStarted);
-                  //timeElapsed = state_timeElapsedSincePumpStarted; //TODO remove
-                  // if pump just started
+                  // if the pump just started to be active
                   if (lastPumpActiveState == 0) {
+                      if(debugMode) {
+                          ESP_LOGD("MaraX", "The pump just started to be active as last state was: %d \n", lastPumpActiveState);
+                      }
                       // reset time elapsed counter
-                      timeElapsed = 0;
-                  }
-                  timeElapsed = timeElapsed + (currentTimestamp - previousTimestamp);
-                  if(debugMode) {
-                      ESP_LOGD("MaraX", "Time elapsed: %d \n", timeElapsed);
+                      timeElapsedSincePumpStarted = 0;
+                      
+                      // set the elapsed time since the pump was active last time
+                      // if the pump never stopped before, set time elapsed to 0
+                      if(lastPumpStoppedTimestamp == 0) {
+                          timeElapsedBetweenLastPumpStopAndStart = 0;
+                      } else {
+                          timeElapsedBetweenLastPumpStopAndStart = currentTimestamp - lastPumpStoppedTimestamp;
+                      }
+                      if(debugMode) {
+                          ESP_LOGD("MaraX", "Time elapsed between stop and restart of the pump: %d \n", timeElapsedBetweenLastPumpStopAndStart);
+                      }
+                      id(state_timeElapsedBetweenLastPumpStopAndStart) = timeElapsedBetweenLastPumpStopAndStart;
+                      state_timeElapsedBetweenLastPumpStopAndStart = timeElapsedBetweenLastPumpStopAndStart; // TODO remove
+                      
+                  } else {
+                      
+                      //add up the elapsed "pump is active"-time
+                      timeElapsedSincePumpStarted = timeElapsedSincePumpStarted + (currentTimestamp - previousTimestamp);
+                      if(debugMode) {
+                          ESP_LOGD("MaraX", "Time elapsed since pump started to be active: %d \n", timeElapsedSincePumpStarted);
+                      }
                   }
                   
-                  id(state_timeElapsedSincePumpStarted) = timeElapsed;
-                  //state_timeElapsedSincePumpStarted = timeElapsed; //TODO remove
+                  // publish result of time elapsed since pump started
+                  id(state_timeElapsedSincePumpStarted) = timeElapsedSincePumpStarted;
+                  //state_timeElapsedSincePumpStarted = timeElapsedSincePumpStarted; //TODO remove
               }
               
+              // when the pump has just stopped, but was active before, save the timestamp when that Stop-Event happend
+              if(senPumpActive == 0 && lastPumpActiveState == 1) {
+                  if(debugMode) {
+                      ESP_LOGD("MaraX", "Pump has just stopped, but was active before. Stop event happend at timestamp: %d \n", currentTimestamp);
+                  }
+                  id(state_lastPumpStoppedTimestamp) = currentTimestamp;
+                  state_lastPumpStoppedTimestamp = currentTimestamp; // TODO remove
+              }
+              
+              
+              // fianlly afterwards update the prev. Timestamp and the Pump Active State
+              // this way we have the prev. Pump State available detectin of "just started" or "just stopped§ events
               id(state_previousTimestamp) = currentTimestamp;
               //state_previousTimestamp = currentTimestamp; //TODO remove
               
