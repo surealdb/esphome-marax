@@ -181,11 +181,12 @@ void readAndPublish(std::string str) {
 
         
         // finally publish everything
-        // Pump Active State (this way we have the prev. Pump State available detectin of "just started" or "just stopped" events)
         
-        // publish result of time elapsed since pump started
         //TODOUNCOMMENTid(state_timeElapsedSincePumpStarted) = timeElapsedSincePumpStarted;
         state_timeElapsedSincePumpStarted = timeElapsedSincePumpStarted; //TODO remove
+        
+        //TODOUNCOMMENTid(state_timeElapsedSincePumpStopped) = timeElapsedSincePumpStopped;
+        state_timeElapsedSincePumpStopped = timeElapsedSincePumpStopped; //TODO remove
         
         //TODOUNCOMMENTid(state_lastPumpStoppedTimestamp) = lastPumpStoppedTimestamp;
         state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODO remove

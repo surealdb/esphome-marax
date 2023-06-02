@@ -261,15 +261,13 @@ uart:
               
               currentTimestamp = millis();
               
+              // READ current global state values
+              
               previousTimestamp = id(state_previousTimestamp);
               //previousTimestamp = state_previousTimestamp; //TODO remove
-              
-              // init previous timestamp if needed
               if (previousTimestamp == 0) {
                   previousTimestamp = currentTimestamp;
               }
-              
-              // READ current global state values
               
               lastPumpActiveState = round(id(pumpActive).state);
               //lastPumpActiveState = pumpActive; //TODO remove
@@ -332,11 +330,12 @@ uart:
 
               
               // finally publish everything
-              // Pump Active State (this way we have the prev. Pump State available detectin of "just started" or "just stopped" events)
               
-              // publish result of time elapsed since pump started
               id(state_timeElapsedSincePumpStarted) = timeElapsedSincePumpStarted;
               //state_timeElapsedSincePumpStarted = timeElapsedSincePumpStarted; //TODO remove
+              
+              id(state_timeElapsedSincePumpStopped) = timeElapsedSincePumpStopped;
+              //state_timeElapsedSincePumpStopped = timeElapsedSincePumpStopped; //TODO remove
               
               id(state_lastPumpStoppedTimestamp) = lastPumpStoppedTimestamp;
               //state_lastPumpStoppedTimestamp = lastPumpStoppedTimestamp; // TODO remove
